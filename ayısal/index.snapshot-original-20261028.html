@@ -1,0 +1,2049 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#06040c" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="description" content="Beril iÃ§in, mert" />
+  <title>Beril</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Syne:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #06040c;
+      --bg-deep: #03010a;
+      --rose: #7c3aed;
+      --rose-deep: #4c1d95;
+      --rose-soft: #a78bfa;
+      --blush: #ddd6fe;
+      --ivory: #f5f3ff;
+      --mist: rgba(237, 233, 254, 0.55);
+      --door: #12081c;
+      --door-edge: #1e1230;
+      --seal: #5b21b6;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--ivory);
+      font-family: Syne, system-ui, sans-serif;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    #app {
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 90% 60% at 50% 38%, rgba(76, 29, 149, 0.22), transparent 62%),
+        radial-gradient(ellipse 70% 50% at 70% 80%, rgba(46, 16, 101, 0.35), transparent 55%),
+        var(--bg-deep);
+    }
+
+    canvas#stage {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 1;
+      cursor: crosshair;
+      opacity: 0;
+      transform: scale(0.96);
+      transition:
+        opacity 2.4s cubic-bezier(0.45, 0, 0.55, 1),
+        transform 2.4s cubic-bezier(0.45, 0, 0.55, 1);
+    }
+    canvas#stage.live {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* â€”â€” KapÄ± â€”â€” */
+    #door {
+      position: absolute;
+      inset: 0;
+      z-index: 30;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(ellipse 80% 70% at 50% 45%, rgba(24, 10, 40, 0.9), transparent 70%),
+        var(--bg-deep);
+      transition:
+        opacity 2.2s cubic-bezier(0.45, 0, 0.55, 1),
+        visibility 2.2s cubic-bezier(0.45, 0, 0.55, 1),
+        filter 2.2s cubic-bezier(0.45, 0, 0.55, 1);
+    }
+    #door.gone {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    #door.opening {
+      opacity: 0;
+      filter: blur(10px) brightness(1.08);
+    }
+    #door.opening .door-panel {
+      transform: scale(0.82);
+      filter: brightness(1.25) saturate(1.2) blur(6px);
+      opacity: 0;
+      transition:
+        transform 2.5s cubic-bezier(0.45, 0, 0.55, 1),
+        filter 2.5s cubic-bezier(0.45, 0, 0.55, 1),
+        opacity 2.5s cubic-bezier(0.45, 0, 0.55, 1);
+    }
+
+    canvas#door-stars,
+    canvas#fx-burst {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      pointer-events: none;
+    }
+    canvas#door-stars { z-index: 0; }
+    canvas#fx-burst {
+      z-index: 35;
+      opacity: 0;
+      transition: opacity 0.6s cubic-bezier(0.45, 0, 0.55, 1);
+    }
+    canvas#fx-burst.active { opacity: 1; }
+
+    .door-panel {
+      width: min(82vw, 420px);
+      aspect-ratio: 3 / 4.15;
+      position: relative;
+      z-index: 2;
+      border-radius: 28px;
+      background:
+        radial-gradient(ellipse 70% 45% at 50% 18%, rgba(91, 33, 182, 0.22), transparent 58%),
+        linear-gradient(168deg, #16101f 0%, #0e0816 52%, #06030c 100%);
+      border: 1px solid rgba(167, 139, 250, 0.22);
+      box-shadow:
+        0 1px 0 rgba(237, 233, 254, 0.06) inset,
+        0 -40px 80px rgba(46, 16, 101, 0.18) inset,
+        0 0 0 1px rgba(12, 4, 20, 0.65),
+        0 18px 48px rgba(0, 0, 0, 0.55),
+        0 0 64px rgba(76, 29, 149, 0.22);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.45rem;
+      padding: 2.4rem 1.5rem;
+      transform-origin: center center;
+      transition: transform 1.2s var(--ease), filter 1.2s var(--ease), opacity 1.2s var(--ease);
+      animation: panelGlow 5.2s ease-in-out infinite;
+    }
+    @media (min-width: 700px) and (max-width: 1100px) {
+      .door-panel {
+        width: min(52vw, 460px);
+      }
+    }
+    @media (min-width: 1100px) {
+      .door-panel {
+        width: min(28vw, 440px);
+      }
+    }
+    @keyframes panelGlow {
+      0%, 100% {
+        box-shadow:
+          0 1px 0 rgba(237, 233, 254, 0.05) inset,
+          0 -40px 80px rgba(46, 16, 101, 0.16) inset,
+          0 0 0 1px rgba(12, 4, 20, 0.65),
+          0 18px 48px rgba(0, 0, 0, 0.55),
+          0 0 56px rgba(76, 29, 149, 0.18);
+      }
+      50% {
+        box-shadow:
+          0 1px 0 rgba(237, 233, 254, 0.1) inset,
+          0 -36px 72px rgba(91, 33, 182, 0.28) inset,
+          0 0 0 1px rgba(12, 4, 20, 0.55),
+          0 20px 52px rgba(0, 0, 0, 0.52),
+          0 0 88px rgba(124, 58, 237, 0.28);
+      }
+    }
+
+    .door-photo-wrap {
+      position: relative;
+      width: min(58%, 176px);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      padding: 3px;
+      background:
+        radial-gradient(circle at 32% 28%, rgba(221, 214, 254, 0.35), transparent 42%),
+        linear-gradient(148deg, #c4b5fd 0%, #6d28d9 48%, #2e1065 100%);
+      box-shadow:
+        0 0 0 1px rgba(196, 181, 253, 0.18),
+        0 12px 28px rgba(0, 0, 0, 0.5),
+        0 0 36px rgba(91, 33, 182, 0.28);
+      cursor: pointer;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .door-photo-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+      display: block;
+      background: #12081c;
+    }
+    .door-photo-wrap.missing img { display: none; }
+    .door-photo-fallback {
+      display: none;
+      position: absolute;
+      inset: 3px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 50% 38%, rgba(91, 33, 182, 0.45), transparent 55%),
+        radial-gradient(circle at 50% 100%, rgba(46, 16, 101, 0.55), transparent 50%),
+        linear-gradient(165deg, #1a1028, #0a0612 70%);
+      color: var(--blush);
+      font-size: 0.58rem;
+      letter-spacing: 0.08em;
+      text-align: center;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 0.35rem;
+      padding: 1rem;
+      line-height: 1.4;
+      overflow: hidden;
+    }
+    .door-photo-fallback::before {
+      content: "B";
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-style: italic;
+      font-size: 2.6rem;
+      line-height: 1;
+      color: rgba(196, 181, 253, 0.22);
+      text-shadow: 0 0 28px rgba(124, 58, 237, 0.35);
+      margin-bottom: 0.15rem;
+    }
+    .door-photo-fallback small {
+      opacity: 0.55;
+      letter-spacing: 0.12em;
+      font-size: 0.55rem;
+    }
+    .door-photo-wrap.missing .door-photo-fallback {
+      display: flex;
+    }
+    #photo-input { display: none; }
+
+    .door-sub {
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: clamp(1.15rem, 4.2vw, 1.55rem);
+      font-style: italic;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      text-transform: none;
+      color: #ede9fe;
+      text-align: center;
+      line-height: 1.35;
+      text-shadow: 0 0 28px rgba(124, 58, 237, 0.35);
+      max-width: 12em;
+    }
+
+    .seal {
+      width: 74px;
+      height: 74px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 34% 28%, #c4b5fd, #7c3aed 42%, var(--seal) 68%, #1e0b3a);
+      box-shadow:
+        0 10px 22px rgba(0, 0, 0, 0.55),
+        0 0 0 1px rgba(237, 233, 254, 0.12) inset,
+        0 0 20px rgba(124, 58, 237, 0.28),
+        inset 0 2px 0 rgba(255, 255, 255, 0.22),
+        inset 0 -8px 16px rgba(30, 11, 58, 0.45);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      border: none;
+      color: var(--ivory);
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: 1.55rem;
+      font-style: italic;
+      transition: transform 0.35s var(--ease), box-shadow 0.35s;
+      animation: sealPulse 3.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+    }
+    .seal:hover, .seal:focus-visible {
+      transform: scale(1.05);
+      box-shadow:
+        0 12px 26px rgba(0, 0, 0, 0.55),
+        0 0 0 1px rgba(237, 233, 254, 0.16) inset,
+        0 0 32px rgba(124, 58, 237, 0.42),
+        inset 0 2px 0 rgba(255, 255, 255, 0.28),
+        inset 0 -8px 16px rgba(30, 11, 58, 0.4);
+      outline: none;
+    }
+    .seal:active { transform: scale(0.96); }
+    @keyframes sealPulse {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow:
+          0 10px 22px rgba(0,0,0,.55),
+          0 0 0 1px rgba(237,233,254,.1) inset,
+          0 0 18px rgba(124,58,237,.22),
+          inset 0 2px 0 rgba(255,255,255,.2),
+          inset 0 -8px 16px rgba(30,11,58,.45);
+      }
+      50% {
+        transform: scale(1.045);
+        box-shadow:
+          0 10px 22px rgba(0,0,0,.55),
+          0 0 0 1px rgba(237,233,254,.16) inset,
+          0 0 34px rgba(167,139,250,.4),
+          inset 0 2px 0 rgba(255,255,255,.28),
+          inset 0 -8px 16px rgba(30,11,58,.38);
+      }
+    }
+
+    /* MÃ¼hÃ¼r â†’ kalp â†’ yÄ±ldÄ±z yolculuÄŸu (canvas); DOM mÃ¼hÃ¼r kÃ¼Ã§Ã¼lÃ¼r */
+    .seal.morphing {
+      animation: sealMorphOut 0.62s cubic-bezier(0.33, 0, 0.2, 1) forwards;
+      pointer-events: none;
+    }
+    @keyframes sealMorphOut {
+      0% { transform: scale(1); opacity: 1; filter: brightness(1) saturate(1); }
+      40% { transform: scale(0.72); opacity: 0.9; filter: brightness(1.25) saturate(1.15); }
+      100% { transform: scale(0); opacity: 0; filter: brightness(1.55) saturate(1.3); }
+    }
+    #door.journeying .door-panel {
+      transition:
+        opacity 1.55s cubic-bezier(0.45, 0, 0.55, 1) 0.28s,
+        filter 1.55s cubic-bezier(0.45, 0, 0.55, 1) 0.28s,
+        transform 1.55s cubic-bezier(0.45, 0, 0.55, 1) 0.28s;
+      opacity: 0;
+      filter: blur(10px) brightness(1.08);
+      transform: scale(0.94);
+    }
+    #door.journeying {
+      transition:
+        opacity 1.75s cubic-bezier(0.45, 0, 0.55, 1) 1.05s,
+        visibility 1.75s cubic-bezier(0.45, 0, 0.55, 1) 1.05s;
+    }
+
+    .door-hint {
+      font-size: 0.72rem;
+      color: rgba(237, 233, 254, 0.55);
+      letter-spacing: 0.06em;
+      margin-top: 0.35rem;
+      text-align: center;
+    }
+
+    /* â€”â€” HUD â€”â€” */
+    .hud {
+      position: absolute;
+      z-index: 20;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 1s var(--ease) 0.6s;
+    }
+    .hud.show { opacity: 1; pointer-events: auto; }
+
+    #music-btn {
+      top: max(16px, env(safe-area-inset-top));
+      right: max(16px, env(safe-area-inset-right));
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1px solid rgba(124, 58, 237, 0.35);
+      background: rgba(10, 4, 10, 0.55);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      color: var(--blush);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: border-color 0.25s, background 0.25s, transform 0.2s;
+    }
+    #music-btn:hover { border-color: var(--rose); background: rgba(76, 29, 149, 0.35); }
+    #music-btn:active { transform: scale(0.94); }
+    #music-btn svg { width: 18px; height: 18px; fill: currentColor; }
+    #music-btn .ico-pause { display: none; }
+    #music-btn.playing .ico-play { display: none; }
+    #music-btn.playing .ico-pause { display: block; }
+
+    #share-btn {
+      top: max(16px, env(safe-area-inset-top));
+      left: max(16px, env(safe-area-inset-left));
+      min-height: 44px;
+      padding: 0 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(196, 181, 253, 0.18);
+      background: rgba(10, 4, 10, 0.45);
+      backdrop-filter: blur(10px);
+      color: var(--mist);
+      font-size: 0.68rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 600;
+    }
+    #share-btn:hover { color: var(--blush); border-color: rgba(124, 58, 237, 0.4); }
+
+    /* â€”â€” Mesaj â€”â€” */
+    #message {
+      position: absolute;
+      left: 50%;
+      bottom: max(9vh, env(safe-area-inset-bottom) + 52px);
+      transform: translateX(-50%) scale(0.92);
+      width: min(88vw, 440px);
+      z-index: 15;
+      text-align: center;
+      pointer-events: none;
+      opacity: 0;
+      filter: blur(6px);
+      transition:
+        opacity 1.8s cubic-bezier(0.45, 0, 0.55, 1),
+        transform 1.8s cubic-bezier(0.45, 0, 0.55, 1),
+        filter 1.8s cubic-bezier(0.45, 0, 0.55, 1);
+    }
+    #message.visible {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+      filter: blur(0);
+    }
+
+    #message .to {
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: clamp(1.6rem, 5.5vw, 2.15rem);
+      font-style: italic;
+      color: #ede9fe;
+      text-shadow: 0 0 28px rgba(124, 58, 237, 0.45), 0 1px 12px rgba(0, 0, 0, 0.55);
+      margin-bottom: 0.6rem;
+      letter-spacing: 0.02em;
+    }
+    #typed {
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: clamp(1.05rem, 3.7vw, 1.22rem);
+      line-height: 1.68;
+      color: rgba(255, 250, 247, 0.96);
+      font-weight: 500;
+      min-height: 5.2em;
+      max-width: 32em;
+      margin: 0 auto;
+      text-shadow: 0 2px 18px rgba(0, 0, 0, 0.85), 0 0 1px rgba(0, 0, 0, 0.9);
+    }
+    #typed .cursor {
+      display: inline-block;
+      width: 0.08em;
+      height: 1em;
+      background: var(--rose-soft);
+      margin-left: 2px;
+      vertical-align: -0.1em;
+      animation: blink 0.9s step-end infinite;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+    #message .from {
+      margin-top: 0.9rem;
+      font-size: 0.72rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: rgba(221, 214, 254, 0.62);
+      opacity: 0;
+      transition: opacity 1s;
+    }
+    #message .from.show { opacity: 1; }
+
+    /* â€”â€” Capybara easter â€”â€” */
+    #capy {
+      position: absolute;
+      bottom: max(12px, env(safe-area-inset-bottom));
+      right: max(10px, env(safe-area-inset-right));
+      z-index: 18;
+      width: 52px;
+      height: 40px;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.8s var(--ease), transform 0.8s var(--ease);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      padding: 0;
+      pointer-events: none;
+    }
+    #capy.awake {
+      opacity: 0.55;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    #capy:hover, #capy.found {
+      opacity: 0.95;
+    }
+    #capy svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 4px 10px rgba(0,0,0,.45)); }
+
+    #capy-tip {
+      position: absolute;
+      bottom: max(56px, env(safe-area-inset-bottom) + 44px);
+      right: max(12px, env(safe-area-inset-right));
+      z-index: 19;
+      max-width: 180px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: rgba(12, 5, 10, 0.85);
+      border: 1px solid rgba(124, 58, 237, 0.3);
+      font-size: 0.72rem;
+      line-height: 1.35;
+      color: var(--blush);
+      opacity: 0;
+      transform: translateY(6px);
+      pointer-events: none;
+      transition: opacity 0.35s, transform 0.35s;
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-style: italic;
+    }
+    #capy-tip.show { opacity: 1; transform: translateY(0); }
+
+    #toast {
+      position: absolute;
+      left: 50%;
+      top: max(20px, env(safe-area-inset-top) + 8px);
+      transform: translateX(-50%) translateY(-12px);
+      z-index: 40;
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: rgba(12, 5, 10, 0.88);
+      border: 1px solid rgba(124, 58, 237, 0.4);
+      color: var(--blush);
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s, transform 0.35s;
+      white-space: nowrap;
+    }
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    #flash {
+      position: absolute;
+      inset: 0;
+      z-index: 25;
+      background: radial-gradient(circle at 50% 45%, rgba(196, 181, 253, 0.32), rgba(124, 58, 237, 0.16) 42%, transparent 72%);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 1.1s cubic-bezier(0.45, 0, 0.55, 1);
+    }
+    #flash.burst { opacity: 1; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .door-panel { animation: none; }
+      .seal { animation: none; }
+      .seal.morphing {
+        animation: sealMorphOut 0.28s ease-out forwards;
+      }
+      #typed .cursor { animation: none; opacity: 0.7; }
+      canvas#stage {
+        transition-duration: 0.5s;
+      }
+      #door.opening .door-panel,
+      #door.journeying .door-panel {
+        transition-duration: 0.45s;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <canvas id="stage" aria-hidden="true"></canvas>
+    <div id="flash"></div>
+
+    <div id="door" role="dialog" aria-label="Hediye kapÄ±sÄ±">
+      <canvas id="door-stars" aria-hidden="true"></canvas>
+      <div class="door-panel">
+        <p class="door-sub">Ä°yi ki varsÄ±n sevgilim</p>
+        <label class="door-photo-wrap missing" id="door-photo-wrap" title="FotoÄŸraf seÃ§ / deÄŸiÅŸtir">
+          <img id="door-photo" src="foto.jpg" alt="Beril" />
+          <span class="door-photo-fallback">FotoÄŸrafÄ±nÄ± buraya koy<br/><small>foto.jpg</small></span>
+          <input type="file" id="photo-input" accept="image/*" />
+        </label>
+        <button type="button" class="seal" id="open-seal" aria-label="Kilidi aÃ§">B</button>
+        <p class="door-hint">kilidi aÃ§mak iÃ§in dokun</p>
+      </div>
+    </div>
+    <canvas id="fx-burst" aria-hidden="true"></canvas>
+
+    <button type="button" class="hud" id="share-btn" title="BaÄŸlantÄ±yÄ± kopyala" aria-label="BaÄŸlantÄ±yÄ± kopyala">PaylaÅŸ</button>
+    <button type="button" class="hud" id="music-btn" aria-label="MÃ¼ziÄŸi aÃ§ / kapat" title="MÃ¼zik">
+      <svg class="ico-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      <svg class="ico-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
+    </button>
+
+    <div id="message" aria-live="polite">
+      <p class="to">Beril</p>
+      <p id="typed"></p>
+      <p class="from" id="sign">mert</p>
+    </div>
+
+    <button type="button" id="capy" aria-label="KÃ¼Ã§Ã¼k sÃ¼rpriz" title="">
+      <svg viewBox="0 0 64 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="30" cy="30" rx="22" ry="14" fill="#6b4a38"/>
+        <ellipse cx="30" cy="28" rx="18" ry="11" fill="#8a6350"/>
+        <ellipse cx="48" cy="22" rx="10" ry="8" fill="#6b4a38"/>
+        <ellipse cx="50" cy="21" rx="7" ry="5.5" fill="#8a6350"/>
+        <ellipse cx="54" cy="19" rx="2.2" ry="1.6" fill="#4a3228"/>
+        <circle cx="52.5" cy="20.5" r="1.1" fill="#1a0e0a"/>
+        <ellipse cx="18" cy="40" rx="4" ry="2.5" fill="#5a3c2e"/>
+        <ellipse cx="40" cy="40" rx="4" ry="2.5" fill="#5a3c2e"/>
+        <ellipse cx="14" cy="22" rx="3.5" ry="4.5" fill="#6b4a38"/>
+        <ellipse cx="22" cy="18" rx="3.2" ry="4" fill="#6b4a38"/>
+        <ellipse cx="34" cy="26" rx="5" ry="3.5" fill="#a07860" opacity="0.55"/>
+      </svg>
+    </button>
+    <div id="capy-tip">sessizce buradayÄ±mâ€¦</div>
+    <div id="toast"></div>
+  </div>
+
+  <audio id="bgm" loop preload="metadata" src="love_you.mp3"></audio>
+
+  <script>
+(function () {
+  "use strict";
+
+  const HER = "Beril";
+  const FROM = "mert";
+  const MESSAGE =
+    "Seninle her ÅŸey daha yumuÅŸak, daha sÄ±cak, daha ev gibi. DÃ¼nyanÄ±n en gÃ¼zel manzarasÄ±na baksam aklÄ±mda yine senin gÃ¶zlerin olur. Benim iÃ§in en huzurlu yer senin yanÄ±n.";
+  // Ana hat / orta dolgu â€” daha okunur, kiÅŸisel
+  const WORDS = [
+    "beril", "Beril", "sen", "aÅŸk", "ev", "gÃ¶zlerin",
+    "huzur", "yumuÅŸak", "sÄ±cak", "yanÄ±nda", "biz",
+  ];
+  // Mikro katman â€” ortak anÄ± / lakap havuzu
+  const MICRO_WORDS = [
+    "Ã¶zlem", "hayal", "mutluluk", "nefes", "kahve", "gece",
+    "gÃ¼lÃ¼mse", "biz", "sen", "ev", "yumuÅŸak", "sÄ±cak",
+    "huzur", "gÃ¶z", "yanÄ±mda", "beril", "aÅŸk", "sessiz",
+    "gÃ¼ven", "Ä±ÅŸÄ±k", "kalp", "an", "birlikte", "gÃ¼lÃ¼ÅŸ",
+  ];
+
+  // Kenar â†’ iÃ§: parlak â†’ derin (renk geÃ§iÅŸi)
+  const COLORS_EDGE = [
+    [221, 214, 254],
+    [196, 181, 253],
+    [167, 139, 250],
+    [245, 243, 255],
+  ];
+  const COLORS_MID = [
+    [167, 139, 250],
+    [124, 58, 237],
+    [196, 181, 253],
+    [91, 33, 182],
+  ];
+  const COLORS_MICRO = [
+    [124, 58, 237],
+    [91, 33, 182],
+    [76, 29, 149],
+    [167, 139, 250],
+  ];
+  const COLORS = COLORS_MID;
+
+  const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ||
+    (matchMedia && matchMedia("(pointer: coarse)").matches);
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const canvas = document.getElementById("stage");
+  const ctx = canvas.getContext("2d", { alpha: false, desynchronized: true });
+  const door = document.getElementById("door");
+  const seal = document.getElementById("open-seal");
+  const flash = document.getElementById("flash");
+  const doorPhoto = document.getElementById("door-photo");
+  const doorPhotoWrap = document.getElementById("door-photo-wrap");
+  const photoInput = document.getElementById("photo-input");
+  const msgEl = document.getElementById("message");
+  const typedEl = document.getElementById("typed");
+  const signEl = document.getElementById("sign");
+  const musicBtn = document.getElementById("music-btn");
+  const shareBtn = document.getElementById("share-btn");
+  const capyBtn = document.getElementById("capy");
+  const capyTip = document.getElementById("capy-tip");
+  const toastEl = document.getElementById("toast");
+  const audio = document.getElementById("bgm");
+  const doorStars = document.getElementById("door-stars");
+  const doorStarsCtx = doorStars.getContext("2d");
+  const fxBurst = document.getElementById("fx-burst");
+  const fxCtx = fxBurst.getContext("2d");
+
+  let W = 0, H = 0, dpr = 1;
+  let started = false;
+  let frame = 0;
+  let fillStart = 0;
+  let outlineDoneAt = 0; // Ã§evre Ã§izimi bitti â†’ mesaj baÅŸlar
+  let particles = [];
+  let sparks = [];
+  let ripples = [];
+  let bloomCanvas = null;
+  let bloomCtx = null;
+  let ambientStars = [];
+  let burstBits = [];
+  let burstRunning = false;
+  let doorStarsRaf = 0;
+  let dust = [];
+  let sceneIntro = 0; // 0â†’1 soft global reveal after door
+  let journey = null; // form â†’ merge â†’ fly â†’ blast (nokta partikÃ¼ller)
+  let blastOrigin = { x: 0, y: 0 };
+  let journeyDots = [];
+  let pageVisible = true;
+  let hiddenAt = 0;
+
+  // Parallax / gyro
+  let px = 0, py = 0;       // smoothed target
+  let tx = 0, ty = 0;       // target from input
+  let breath = 1;
+  let beatPhase = 0;
+
+  let musicOn = false;
+  let typing = false;
+  let typedDone = false;
+  let toastTimer = 0;
+
+  function rgb(c, a) {
+    return a == null ? `rgb(${c[0]},${c[1]},${c[2]})` : `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+  }
+
+  function heartXY(t) {
+    const x = 16 * Math.pow(Math.sin(t), 3);
+    const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+    return { x, y };
+  }
+
+  function toScreen(x, y, scale) {
+    return {
+      x: x * scale + W * 0.5,
+      y: y * scale + H * 0.42,
+    };
+  }
+
+  function pickColor(kind) {
+    const pool =
+      kind === "outline" ? COLORS_EDGE :
+      kind === "micro" ? COLORS_MICRO :
+      COLORS_MID;
+    return pool[(Math.random() * pool.length) | 0];
+  }
+
+  function Particle(x, y, order, kind, layer, z) {
+    this.bx = x; this.by = y;
+    this.x = x; this.y = y;
+    this.ox = x; this.oy = y; // birth / blast origin
+    this.order = order;
+    this.kind = kind;
+    this.layer = layer; // 0 back Â· 1 mid Â· 2 front
+    this.z = z;
+    this.word = kind === "micro"
+      ? MICRO_WORDS[(Math.random() * MICRO_WORDS.length) | 0]
+      : WORDS[(Math.random() * WORDS.length) | 0];
+    this.color = pickColor(kind);
+    this.alpha = 0;
+    this.grow = 0;
+    this.flight = 1; // 1 = settled; <1 = flying from blast
+    this.flicker = Math.random() * Math.PI * 2;
+    this.delay = 0;
+    this.sizeMult = kind === "micro"
+      ? 0.48 + Math.random() * 0.32
+      : kind === "outline"
+        ? 0.96 + Math.random() * 0.3
+        : 0.86 + Math.random() * 0.38;
+    this.drift = (Math.random() - 0.5) * 0.35;
+    // Mikro: hissedilir yavaÅŸ yÃ¶rÃ¼nge (px) â€” reduced-motion'da Ã§izimde kapalÄ±
+    this.orbitAmp = kind === "micro" ? (2.4 + Math.random() * 3.6) : 0;
+    this.orbitSpd = kind === "micro" ? (0.48 + Math.random() * 0.55) : 0;
+    this.orbitPhase = Math.random() * Math.PI * 2;
+    // Katmana gÃ¶re hedef opaklÄ±k (kenar net, iÃ§e doÄŸru hafif saydam)
+    this.alphaCap =
+      kind === "outline" ? 1 :
+      kind === "fill" ? 0.92 :
+      0.72;
+  }
+
+  function seedDust() {
+    const n = isMobile ? 40 : 120;
+    dust = [];
+    for (let i = 0; i < n; i++) {
+      dust.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        r: isMobile ? (1.1 + Math.random() * 2.6) : (0.6 + Math.random() * 2.2),
+        a: isMobile ? (0.1 + Math.random() * 0.24) : (0.08 + Math.random() * 0.22),
+        vx: (Math.random() - 0.5) * 0.18,
+        vy: -0.08 - Math.random() * 0.22,
+        tw: Math.random() * Math.PI * 2,
+        hue: Math.random() < 0.55 ? 0 : 1,
+      });
+    }
+  }
+
+  function drawDust(tSec, camX, camY) {
+    for (let i = 0; i < dust.length; i++) {
+      const d = dust[i];
+      d.x += d.vx + camX * 0.01;
+      d.y += d.vy + camY * 0.008;
+      if (d.y < -6) { d.y = H + 6; d.x = Math.random() * W; }
+      if (d.x < -6) d.x = W + 6;
+      if (d.x > W + 6) d.x = -6;
+      const tw = 0.55 + 0.45 * Math.sin(tSec * 1.2 + d.tw);
+      const alpha = d.a * tw * (0.35 + 0.65 * sceneIntro);
+      if (alpha < 0.02) continue;
+      const col = d.hue
+        ? `rgba(196, 181, 253, ${alpha})`
+        : `rgba(124, 58, 237, ${alpha})`;
+      ctx.beginPath();
+      ctx.fillStyle = col;
+      if (!isMobile) {
+        ctx.shadowColor = col;
+        ctx.shadowBlur = 8;
+      }
+      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+      ctx.fill();
+      if (!isMobile) ctx.shadowBlur = 0;
+    }
+  }
+
+  function easeOutCubic(t) {
+    return 1 - Math.pow(1 - t, 3);
+  }
+
+  function easeInOutCubic(t) {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  }
+
+  function easeOutQuint(t) {
+    return 1 - Math.pow(1 - t, 5);
+  }
+
+  function easeInOutQuint(t) {
+    return t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
+  }
+
+  function sizeOverlayCanvas(c, cctx) {
+    c.width = (W * dpr) | 0;
+    c.height = (H * dpr) | 0;
+    c.style.width = W + "px";
+    c.style.height = H + "px";
+    cctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function seedAmbientStars() {
+    const n = isMobile ? 48 : 80;
+    ambientStars = [];
+    for (let i = 0; i < n; i++) {
+      const tier = Math.random();
+      const r = tier > 0.88 ? (1.4 + Math.random() * 1.1)
+        : tier > 0.55 ? (0.7 + Math.random() * 0.7)
+        : (0.35 + Math.random() * 0.45);
+      ambientStars.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        r,
+        a: tier > 0.88 ? (0.35 + Math.random() * 0.4) : (0.1 + Math.random() * 0.35),
+        tw: Math.random() * Math.PI * 2,
+        sp: reduceMotion ? 0 : (0.08 + Math.random() * 0.28),
+        drift: reduceMotion ? 0 : (Math.random() - 0.5) * 0.08,
+        warm: Math.random() < 0.35,
+        flare: tier > 0.9,
+      });
+    }
+  }
+
+  function drawAmbientStars(now) {
+    if (door.classList.contains("gone")) return;
+    if (!pageVisible) {
+      doorStarsRaf = requestAnimationFrame(drawAmbientStars);
+      return;
+    }
+    const t = now * 0.001;
+    doorStarsCtx.clearRect(0, 0, W, H);
+    for (let i = 0; i < ambientStars.length; i++) {
+      const s = ambientStars[i];
+      s.y += s.sp * 0.35;
+      s.x += s.drift;
+      if (s.y > H + 4) { s.y = -4; s.x = Math.random() * W; }
+      if (s.x < -4) s.x = W + 4;
+      if (s.x > W + 4) s.x = -4;
+      const twinkle = reduceMotion ? 0.85 : (0.55 + 0.45 * Math.sin(t * 1.35 + s.tw));
+      const alpha = s.a * twinkle;
+      const col = s.warm
+        ? `rgba(196, 181, 253, ${alpha})`
+        : `rgba(237, 233, 254, ${alpha * 0.92})`;
+      doorStarsCtx.beginPath();
+      doorStarsCtx.fillStyle = col;
+      doorStarsCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      doorStarsCtx.fill();
+      if (s.flare && !reduceMotion) {
+        doorStarsCtx.beginPath();
+        doorStarsCtx.strokeStyle = `rgba(167, 139, 250, ${alpha * 0.32})`;
+        doorStarsCtx.lineWidth = 0.5;
+        doorStarsCtx.moveTo(s.x - s.r * 2.8, s.y);
+        doorStarsCtx.lineTo(s.x + s.r * 2.8, s.y);
+        doorStarsCtx.moveTo(s.x, s.y - s.r * 2.8);
+        doorStarsCtx.lineTo(s.x, s.y + s.r * 2.8);
+        doorStarsCtx.stroke();
+      }
+    }
+    doorStarsRaf = requestAnimationFrame(drawAmbientStars);
+  }
+
+  function drawHeartPath(c, x, y, size) {
+    c.beginPath();
+    const s = size;
+    c.moveTo(x, y + s * 0.3);
+    c.bezierCurveTo(x, y, x - s, y, x - s, y + s * 0.35);
+    c.bezierCurveTo(x - s, y + s * 0.7, x, y + s * 1.05, x, y + s * 1.35);
+    c.bezierCurveTo(x, y + s * 1.05, x + s, y + s * 0.7, x + s, y + s * 0.35);
+    c.bezierCurveTo(x + s, y, x, y, x, y + s * 0.3);
+    c.closePath();
+  }
+
+  /** Cebirsel dolu kalp testi â€” Ä±ÅŸÄ±nsal bias yok, doÄŸru lob dolumu */
+  function inHeartAlgebraic(nx, ny) {
+    const x2 = nx * nx;
+    const y2 = ny * ny;
+    const a = x2 + y2 - 1;
+    return a * a * a - x2 * ny * ny * ny <= 0;
+  }
+
+  /**
+   * Teknolojik partikÃ¼l kalbi: keskin kenar + loblarÄ± dolu yoÄŸun bulut.
+   * Kenar = parametrik; dolgu = rejection (doÄŸru ÅŸekil).
+   */
+  function sampleTechHeartLocal(n, scale) {
+    const pts = [];
+    const nEdge = Math.floor(n * 0.34);
+    const nFill = n - nEdge;
+    // Net silÃ¼et â€” Ã§ift halka (iÃ§+dÄ±ÅŸ kenar)
+    for (let i = 0; i < nEdge; i++) {
+      const t = (i / nEdge) * Math.PI * 2;
+      const h = heartXY(t);
+      const ring = i % 2 === 0 ? 1.0 : 0.965;
+      const jx = (Math.random() - 0.5) * 0.08;
+      const jy = (Math.random() - 0.5) * 0.08;
+      pts.push({
+        x: (h.x * ring + jx) * scale,
+        y: (h.y * ring + jy) * scale,
+        edge: true,
+      });
+    }
+    // Dolu iÃ§ â€” bbox rejection, loblarda eÅŸit yoÄŸunluk
+    let attempts = 0;
+    const maxA = nFill * 120;
+    while (pts.length < n && attempts < maxA) {
+      attempts++;
+      const nx = (Math.random() * 2 - 1) * 1.35;
+      const ny = (Math.random() * 2.2 - 1.25);
+      if (!inHeartAlgebraic(nx, -ny)) continue;
+      // Parametrik kalple hizalÄ± Ã¶lÃ§ek
+      pts.push({
+        x: nx * 16.2 * scale * 0.92,
+        y: ny * 15.5 * scale * 0.92,
+        edge: false,
+      });
+    }
+    return pts;
+  }
+
+  /** Tech nokta: soft halo + parlak Ã§ekirdek (rich=false â†’ hÄ±zlÄ± Ã§izim) */
+  function drawTechDot(c, x, y, r, colorArr, alpha, twinkle, rich) {
+    if (alpha <= 0.01) return;
+    const tw = twinkle == null ? 1 : twinkle;
+    const col = rgb(colorArr);
+    const bright = `rgba(245, 243, 255, ${Math.min(1, alpha * 0.95 * tw)})`;
+    c.save();
+    if (rich !== false) {
+      c.globalAlpha = alpha * (isMobile ? 0.34 : 0.28) * tw;
+      c.fillStyle = col;
+      c.beginPath();
+      c.arc(x, y, r * (isMobile ? 2.9 : 2.6), 0, Math.PI * 2);
+      c.fill();
+      c.globalAlpha = alpha * 0.65 * tw;
+      c.fillStyle = col;
+      if (!isMobile) {
+        c.shadowColor = col;
+        c.shadowBlur = 7;
+      }
+      c.beginPath();
+      c.arc(x, y, r * 1.2, 0, Math.PI * 2);
+      c.fill();
+      if (!isMobile) c.shadowBlur = 0;
+    } else {
+      c.globalAlpha = alpha * 0.55 * tw;
+      c.fillStyle = col;
+      c.beginPath();
+      c.arc(x, y, r * (isMobile ? 1.55 : 1.35), 0, Math.PI * 2);
+      c.fill();
+    }
+    c.globalAlpha = alpha * tw;
+    c.fillStyle = bright;
+    c.beginPath();
+    c.arc(x, y, Math.max(0.4, r * 0.42), 0, Math.PI * 2);
+    c.fill();
+    c.restore();
+  }
+
+  function strokeHeartPath(c, cx, cy, scale, steps) {
+    steps = steps || 160;
+    c.beginPath();
+    for (let i = 0; i <= steps; i++) {
+      const t = (i / steps) * Math.PI * 2;
+      const h = heartXY(t);
+      const x = cx + h.x * scale;
+      const y = cy + h.y * scale;
+      if (i === 0) c.moveTo(x, y);
+      else c.lineTo(x, y);
+    }
+    c.closePath();
+  }
+
+  /** Daire deÄŸil â€” kalp silÃ¼etine uyumlu aura + rim */
+  function drawHeartVolumeAura(cx, cy, scale, pulse) {
+    const s = scale * pulse;
+    const pathSteps = isMobile ? 72 : 120;
+    const rimSteps = isMobile ? 96 : 180;
+    fxCtx.save();
+    // soft volumetric fog clipped to heart
+    fxCtx.beginPath();
+    strokeHeartPath(fxCtx, cx, cy, s * 1.1, pathSteps);
+    fxCtx.clip();
+    const g = fxCtx.createRadialGradient(cx, cy - s * 2.2, 2, cx, cy, 22 * s);
+    g.addColorStop(0, "rgba(221, 214, 254, 0.34)");
+    g.addColorStop(0.35, "rgba(167, 139, 250, 0.2)");
+    g.addColorStop(0.7, "rgba(91, 33, 182, 0.1)");
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    fxCtx.fillStyle = g;
+    fxCtx.fillRect(cx - 24 * s, cy - 24 * s, 48 * s, 48 * s);
+    fxCtx.restore();
+
+    // dÄ±ÅŸ kalp rim â€” soft shell; shadowBlur desktop only
+    fxCtx.save();
+    fxCtx.strokeStyle = `rgba(237, 233, 254, ${0.38 * pulse})`;
+    fxCtx.lineWidth = isMobile ? 2 : 1.75;
+    if (!isMobile) {
+      fxCtx.shadowColor = "rgba(124, 58, 237, 0.55)";
+      fxCtx.shadowBlur = 16;
+    }
+    strokeHeartPath(fxCtx, cx, cy, s * 1.06, rimSteps);
+    fxCtx.stroke();
+    // ince iÃ§ rim
+    if (!isMobile) fxCtx.shadowBlur = 0;
+    fxCtx.strokeStyle = `rgba(167, 139, 250, ${0.28 * pulse})`;
+    fxCtx.lineWidth = 0.9;
+    strokeHeartPath(fxCtx, cx, cy, s * 0.97, isMobile ? 72 : 140);
+    fxCtx.stroke();
+    fxCtx.restore();
+  }
+
+  function makeJourneyDots(cx, cy, heartScale, count) {
+    const targets = sampleTechHeartLocal(count, heartScale);
+    journeyDots = targets.map((p, i) => {
+      const ang = Math.random() * Math.PI * 2;
+      const dist = 10 + Math.random() * (isMobile ? 48 : 72);
+      const baseR = p.edge ? 0.7 + Math.random() * 0.55 : 0.4 + Math.random() * 0.95;
+      return {
+        x: cx + Math.cos(ang) * dist,
+        y: cy + Math.sin(ang) * dist,
+        tx: cx + p.x,
+        ty: cy + p.y,
+        r: baseR,
+        a: 0,
+        tw: Math.random() * Math.PI * 2,
+        edge: !!p.edge,
+        wake: Math.random() * 0.55,
+        color: p.edge
+          ? COLORS[(Math.random() * 3) | 0]
+          : COLORS[(Math.random() * COLORS.length) | 0],
+        seed: i,
+      };
+    });
+  }
+
+  function retargetDotsToPoint(px, py) {
+    for (let i = 0; i < journeyDots.length; i++) {
+      const d = journeyDots[i];
+      d.tx = px + (Math.random() - 0.5) * 1.2;
+      d.ty = py + (Math.random() - 0.5) * 1.2;
+      d.wake = Math.random() * 0.25;
+    }
+  }
+
+  function spawnHeartDotBlast(cx, cy) {
+    const scale = Math.min(W, H) / (isMobile ? 36 : 32);
+    const n = reduceMotion ? (isMobile ? 360 : 900) : (isMobile ? 680 : 2400);
+    const targets = sampleTechHeartLocal(n, scale);
+    const dustN = reduceMotion ? (isMobile ? 120 : 500) : (isMobile ? 380 : 1600);
+    journeyDots = targets.map((p) => {
+      const ang = Math.atan2(p.y, p.x) + (Math.random() - 0.5) * 0.5;
+      const kick = 2.2 + Math.random() * 7.5;
+      return {
+        x: cx,
+        y: cy,
+        tx: cx + p.x,
+        ty: cy + p.y,
+        vx: Math.cos(ang) * kick,
+        vy: Math.sin(ang) * kick,
+        r: p.edge ? 0.75 + Math.random() * 0.7 : 0.4 + Math.random() * 1.05,
+        a: 1,
+        tw: Math.random() * Math.PI * 2,
+        edge: !!p.edge,
+        color: COLORS[(Math.random() * COLORS.length) | 0],
+        mode: "blast",
+        wake: 0,
+      };
+    });
+    for (let i = 0; i < dustN; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const dist = scale * (8 + Math.random() * 28);
+      const kick = 3 + Math.random() * 11;
+      journeyDots.push({
+        x: cx,
+        y: cy,
+        tx: cx + Math.cos(ang) * dist,
+        ty: cy + Math.sin(ang) * dist,
+        vx: Math.cos(ang) * kick,
+        vy: Math.sin(ang) * kick,
+        r: 0.35 + Math.random() * 1.1,
+        a: 0.55 + Math.random() * 0.45,
+        tw: Math.random() * Math.PI * 2,
+        edge: false,
+        color: COLORS[(Math.random() * COLORS.length) | 0],
+        mode: "blast",
+        free: true,
+        wake: 0,
+      });
+    }
+  }
+
+  function stepDotsTowardTargets(baseSpeed, phaseT) {
+    let maxDist = 0;
+    for (let i = 0; i < journeyDots.length; i++) {
+      const d = journeyDots[i];
+      const localT = Math.max(0, (phaseT || 1) - (d.wake || 0));
+      if (localT <= 0) {
+        maxDist = Math.max(maxDist, 40);
+        continue;
+      }
+      const dx = d.tx - d.x;
+      const dy = d.ty - d.y;
+      const dist = Math.hypot(dx, dy);
+      maxDist = Math.max(maxDist, dist);
+      const damp = 0.08 + baseSpeed * (0.55 + Math.min(1, dist / 80));
+      const step = Math.min(1, damp * (0.65 + easeOutQuint(Math.min(1, localT))));
+      if (dist < 0.3) {
+        d.x = d.tx;
+        d.y = d.ty;
+      } else {
+        d.x += dx * step;
+        d.y += dy * step;
+      }
+      if (d.a < 1) d.a = Math.min(1, d.a + 0.07 + localT * 0.05);
+    }
+    return { maxDist };
+  }
+
+  function drawJourneyDots(now) {
+    const t = (now || 0) * 0.001;
+    const n = journeyDots.length;
+    // YoÄŸun sahnede glow seyrek; Ã§oÄŸu nokta hÄ±zlÄ± Ã§ekirdek
+    const richEvery = isMobile
+      ? (n > 700 ? 12 : n > 400 ? 8 : 5)
+      : (n > 900 ? 6 : n > 500 ? 4 : 3);
+    for (let i = 0; i < n; i++) {
+      const d = journeyDots[i];
+      const twinkle = 0.72 + 0.28 * Math.sin(t * 7 + d.tw);
+      const rich = d.edge || i % richEvery === 0;
+      drawTechDot(fxCtx, d.x, d.y, d.r, d.color, d.a, twinkle, rich);
+    }
+  }
+
+  function tickJourney(now) {
+    if (!journey) return;
+    fxCtx.clearRect(0, 0, W, H);
+    const elapsed = now - journey.t0;
+    const pulse = 1 + 0.04 * Math.sin(now * 0.0035);
+
+    if (journey.phase === "form") {
+      const phaseT = elapsed / 950;
+      const { maxDist } = stepDotsTowardTargets(reduceMotion ? 0.22 : 0.11, phaseT);
+      const formPulse = pulse * (0.92 + 0.08 * easeOutCubic(Math.min(1, elapsed / 700)));
+      drawHeartVolumeAura(journey.sx, journey.sy, journey.heartScale, formPulse);
+      drawJourneyDots(now);
+      if ((maxDist < 1.8 && elapsed > 750) || elapsed > 1700) {
+        journey.phase = "hold";
+        journey.t0 = now;
+      }
+      requestAnimationFrame(tickJourney);
+      return;
+    }
+
+    if (journey.phase === "hold") {
+      for (let i = 0; i < journeyDots.length; i++) {
+        const d = journeyDots[i];
+        const jig = d.edge ? 0.28 : 0.65;
+        d.x = d.tx + Math.sin(now * 0.012 + d.tw) * jig;
+        d.y = d.ty + Math.cos(now * 0.014 + d.tw) * jig * 0.85;
+        d.r = (d.edge ? 0.82 : 0.55) + 0.28 * Math.abs(Math.sin(now * 0.007 + d.tw));
+      }
+      const holdBreath = pulse * (1.02 + 0.03 * Math.sin(now * 0.004));
+      drawHeartVolumeAura(journey.sx, journey.sy, journey.heartScale, holdBreath);
+      drawJourneyDots(now);
+      if (elapsed > (reduceMotion ? 200 : 640)) {
+        journey.phase = "merge";
+        journey.t0 = now;
+        retargetDotsToPoint(journey.sx, journey.sy);
+      }
+      requestAnimationFrame(tickJourney);
+      return;
+    }
+
+    if (journey.phase === "merge") {
+      const phaseT = elapsed / 800;
+      const { maxDist } = stepDotsTowardTargets(reduceMotion ? 0.26 : 0.14, phaseT);
+      const mergeP = easeInOutQuint(Math.min(1, elapsed / 850));
+      for (let i = 0; i < journeyDots.length; i++) {
+        journeyDots[i].r = Math.max(0.3, journeyDots[i].r * (1 - mergeP * 0.03));
+        journeyDots[i].a = Math.max(0.12, 1 - mergeP * 0.4);
+      }
+      drawHeartVolumeAura(journey.sx, journey.sy, journey.heartScale * (1 - mergeP * 0.75), 1 - mergeP * 0.55);
+      drawJourneyDots(now);
+      drawTechDot(fxCtx, journey.sx, journey.sy, 2.5 + mergeP * 5.5, [245, 243, 255], 0.5 + mergeP * 0.5, 1, true);
+      drawTechDot(fxCtx, journey.sx, journey.sy, 1.4 + mergeP * 2, [167, 139, 250], 0.9, 1, true);
+      if ((maxDist < 1 && elapsed > 500) || elapsed > 1100) {
+        journey.phase = "fly";
+        journey.t0 = now;
+        journey.x = journey.sx;
+        journey.y = journey.sy;
+        journey.trail = [];
+        for (let i = 0; i < (isMobile ? 18 : 28); i++) {
+          journey.trail.push({
+            x: journey.sx,
+            y: journey.sy,
+            life: 1,
+            r: 0.6 + Math.random() * 1.2,
+            color: COLORS[(Math.random() * COLORS.length) | 0],
+          });
+        }
+        journeyDots = [];
+      }
+      requestAnimationFrame(tickJourney);
+      return;
+    }
+
+    if (journey.phase === "fly") {
+      const dur = reduceMotion ? 600 : 1400;
+      const p = Math.min(1, elapsed / dur);
+      const e = easeInOutQuint(p);
+      journey.x = journey.sx + (journey.tx - journey.sx) * e;
+      journey.y = journey.sy + (journey.ty - journey.sy) * e;
+      if (journey.trail) {
+        journey.trail.push({
+          x: journey.x + (Math.random() - 0.5) * 4,
+          y: journey.y + (Math.random() - 0.5) * 4,
+          life: 1,
+          r: 0.7 + Math.random() * 1.4,
+          color: COLORS[(Math.random() * COLORS.length) | 0],
+        });
+        for (let i = journey.trail.length - 1; i >= 0; i--) {
+          const tr = journey.trail[i];
+          tr.life *= 0.94;
+          tr.y += 0.15;
+          if (tr.life < 0.05) {
+            journey.trail.splice(i, 1);
+            continue;
+          }
+          drawTechDot(fxCtx, tr.x, tr.y, tr.r * tr.life, tr.color, tr.life * 0.7, 1, false);
+        }
+        if (journey.trail.length > 60) journey.trail.splice(0, journey.trail.length - 60);
+      }
+      for (let i = 0; i < 18; i++) {
+        const t = i / 18;
+        const px = journey.x - (journey.x - journey.sx) * t * 0.25;
+        const py = journey.y - (journey.y - journey.sy) * t * 0.25;
+        drawTechDot(fxCtx, px, py, 1.6 * (1 - t), [167, 139, 250], 0.6 * (1 - t), 1, i < 4);
+      }
+      const breath = 3.6 + Math.sin(e * Math.PI) * 2.2;
+      drawTechDot(fxCtx, journey.x, journey.y, breath, [245, 243, 255], 1, 1, true);
+      drawTechDot(fxCtx, journey.x, journey.y, breath * 0.55, [167, 139, 250], 0.95, 1, true);
+      if (p >= 1) {
+        journey.phase = "blast";
+        journey.t0 = now;
+        journey.trail = null;
+        onPointArrived(journey.tx, journey.ty);
+      }
+      requestAnimationFrame(tickJourney);
+      return;
+    }
+
+    if (journey.phase === "blast") {
+      let maxDist = 0;
+      for (let i = 0; i < journeyDots.length; i++) {
+        const d = journeyDots[i];
+        if (d.mode === "blast" && d.vx != null) {
+          d.x += d.vx;
+          d.y += d.vy;
+          d.vx *= 0.915;
+          d.vy *= 0.915;
+          const dx = d.tx - d.x;
+          const dy = d.ty - d.y;
+          const pull = d.free ? 0.028 : 0.075;
+          d.x += dx * pull;
+          d.y += dy * pull;
+          maxDist = Math.max(maxDist, Math.hypot(dx, dy));
+          if (elapsed > 500) {
+            d.vx *= 0.88;
+            d.vy *= 0.88;
+            d.x += dx * (d.free ? 0.08 : 0.14);
+            d.y += dy * (d.free ? 0.08 : 0.14);
+          }
+        }
+        if (elapsed > 1100) d.a *= 0.99;
+        if (d.free && elapsed > 700) d.a *= 0.978;
+      }
+      drawHeartVolumeAura(journey.tx, journey.ty, Math.min(W, H) / 36, pulse);
+      drawJourneyDots(now);
+      const flashP = Math.min(1, elapsed / 420);
+      if (flashP < 1) {
+        const r = 22 + flashP * 160;
+        const g = fxCtx.createRadialGradient(journey.tx, journey.ty, 0, journey.tx, journey.ty, r);
+        g.addColorStop(0, `rgba(245, 243, 255, ${0.5 * (1 - flashP)})`);
+        g.addColorStop(0.3, `rgba(167, 139, 250, ${0.35 * (1 - flashP)})`);
+        g.addColorStop(0.7, `rgba(91, 33, 182, ${0.12 * (1 - flashP)})`);
+        g.addColorStop(1, "rgba(0,0,0,0)");
+        fxCtx.fillStyle = g;
+        fxCtx.beginPath();
+        fxCtx.arc(journey.tx, journey.ty, r, 0, Math.PI * 2);
+        fxCtx.fill();
+      }
+      if (elapsed > 2200 || (elapsed > 1200 && maxDist < 4)) {
+        burstRunning = false;
+        journey = null;
+        journeyDots = [];
+        fxCtx.clearRect(0, 0, W, H);
+        fxBurst.classList.remove("active");
+        return;
+      }
+      requestAnimationFrame(tickJourney);
+      return;
+    }
+  }
+
+  function onPointArrived(cx, cy) {
+    blastOrigin.x = cx;
+    blastOrigin.y = cy;
+    spawnHeartDotBlast(cx, cy);
+    door.classList.add("opening");
+    // Ã–nce nokta-kalp patlamasÄ± gÃ¶rÃ¼nsÃ¼n, sonra yazÄ±lar belirmeye baÅŸlasÄ±n
+    setTimeout(() => {
+      started = true;
+      buildParticles({ fromBlast: true, ox: cx, oy: cy });
+      canvas.classList.add("live");
+    }, 420);
+    setTimeout(() => {
+      door.classList.add("gone");
+      cancelAnimationFrame(doorStarsRaf);
+      musicBtn.classList.add("show");
+      shareBtn.classList.add("show");
+    }, 1700);
+  }
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, isMobile ? 1.25 : 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = (W * dpr) | 0;
+    canvas.height = (H * dpr) | 0;
+    canvas.style.width = W + "px";
+    canvas.style.height = H + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    sizeOverlayCanvas(doorStars, doorStarsCtx);
+    sizeOverlayCanvas(fxBurst, fxCtx);
+    seedAmbientStars();
+    seedDust();
+
+    // Bloom offscreen: desktop half-res; skip entirely on mobile
+    if (isMobile || reduceMotion) {
+      bloomCanvas = null;
+      bloomCtx = null;
+    } else {
+      const bw = Math.max(1, (W * 0.5) | 0);
+      const bh = Math.max(1, (H * 0.5) | 0);
+      if (!bloomCanvas) {
+        bloomCanvas = document.createElement("canvas");
+        bloomCtx = bloomCanvas.getContext("2d");
+      }
+      bloomCanvas.width = bw;
+      bloomCanvas.height = bh;
+    }
+
+    if (started) buildParticles();
+  }
+
+  function buildParticles(opts) {
+    opts = opts || {};
+    particles = [];
+    sparks = [];
+    frame = 0;
+    sceneIntro = opts.fromBlast ? 0.35 : 0;
+
+    // Mobilde biraz daha bÃ¼yÃ¼k silÃ¼et â†’ zayÄ±f/ince his azalÄ±r (adet aynÄ±)
+    const scale = Math.min(W, H) / (isMobile ? 42 : 52);
+    // Ã‡evre Ã§izimi net gÃ¶rÃ¼nsÃ¼n diye daha sÄ±k outline
+    const nOutline = isMobile ? 140 : 190;
+    const nFill = isMobile ? 85 : 120;
+    // YerleÅŸim aralÄ±ÄŸÄ±: aynÄ± bÃ¼tÃ§e iÃ§inde daha dolu okuma (adet tavanÄ± deÄŸiÅŸmez)
+    const gapO = isMobile ? 18 : 22;
+    const gapF = isMobile ? 34 : 42;
+    const ox = opts.ox != null ? opts.ox : W * 0.5;
+    const oy = opts.oy != null ? opts.oy : H * 0.42;
+
+    const outlinePlaced = [];
+    const outline = [];
+    for (let i = 0; i < nOutline; i++) {
+      const t = (i / nOutline) * Math.PI * 2;
+      const h = heartXY(t);
+      const s = toScreen(h.x, h.y, scale);
+      if (outlinePlaced.some((p) => Math.hypot(s.x - p.x, s.y - p.y) < gapO)) continue;
+      outlinePlaced.push(s);
+      // order = parametrik aÃ§Ä± sÄ±rasÄ± â†’ kalbi Ã§izme yÃ¶nÃ¼
+      outline.push(new Particle(s.x, s.y, i, "outline", 2, 1.05 + Math.random() * 0.2));
+    }
+
+    const fillPlaced = [];
+    const fill = [];
+    let attempts = 0;
+    const maxA = nFill * 90;
+    while (fill.length < nFill && attempts < maxA) {
+      attempts++;
+      const t = Math.random() * Math.PI * 2;
+      const r = Math.random() * 0.86;
+      const h = heartXY(t);
+      const s = toScreen(h.x * r, h.y * r, scale);
+      if (fillPlaced.some((p) => Math.hypot(s.x - p.x, s.y - p.y) < gapF)) continue;
+      fillPlaced.push(s);
+      const layer = r < 0.4 ? 0 : 1;
+      const z = layer === 0 ? 0.45 + Math.random() * 0.2 : 0.7 + Math.random() * 0.25;
+      fill.push(new Particle(s.x, s.y, (Math.random() * 280) | 0, "fill", layer, z));
+    }
+
+    // Mikro kelimeler: bÃ¼yÃ¼klerin yanÄ±nda ekstra yoÄŸun dolgu
+    const nMicro = isMobile ? 160 : 240;
+    const gapM = isMobile ? 12 : 14;
+    const microPlaced = outlinePlaced.concat(fillPlaced);
+    const micro = [];
+    let mAttempts = 0;
+    while (micro.length < nMicro && mAttempts < nMicro * 100) {
+      mAttempts++;
+      const t = Math.random() * Math.PI * 2;
+      const r = Math.sqrt(Math.random()) * 0.92;
+      const h = heartXY(t);
+      const s = toScreen(h.x * r, h.y * r, scale);
+      if (microPlaced.some((p) => Math.hypot(s.x - p.x, s.y - p.y) < gapM)) continue;
+      microPlaced.push(s);
+      micro.push(new Particle(s.x, s.y, (Math.random() * 200) | 0, "micro", 0, 0.4 + Math.random() * 0.25));
+    }
+
+    // Ã‡evre: kalp konturunu sÄ±rayla Ã§iz â€” yerinde fade (ortadan uÃ§uÅŸ yok)
+    outline.sort((a, b) => a.order - b.order);
+    const periStep = reduceMotion ? 0.9 : 2.35;
+    outline.forEach((p, idx) => {
+      p.drawIndex = idx;
+      p.delay = Math.floor(idx * periStep);
+      p.ox = p.bx;
+      p.oy = p.by;
+      p.flight = 1; // yerinde opaklaÅŸ
+      p.grow = 0.85;
+      p.alpha = 0;
+    });
+
+    // Ä°Ã§ dolgu + mikro: Ã§evre bittikten sonra, yine yerinde fade
+    fillStart = Math.floor(outline.length * periStep) + (reduceMotion ? 12 : 36);
+    outlineDoneAt = fillStart + (reduceMotion ? 18 : 48);
+    fill.forEach((p, idx) => {
+      p.delay = fillStart + Math.floor(idx * (reduceMotion ? 0.45 : 1.05));
+      p.ox = p.bx;
+      p.oy = p.by;
+      p.flight = 1;
+      p.grow = 0.85;
+      p.alpha = 0;
+    });
+    micro.forEach((p, idx) => {
+      p.delay = fillStart + 8 + Math.floor(idx * (reduceMotion ? 0.25 : 0.55));
+      p.ox = p.bx;
+      p.oy = p.by;
+      p.flight = 1;
+      p.grow = 0.9;
+      p.alpha = 0;
+    });
+
+    particles = outline.concat(fill, micro);
+    particles.sort((a, b) => a.z - b.z);
+  }
+
+  /** Boyuta gÃ¶re glow: outline gÃ¼Ã§lÃ¼, fill orta, micro sakin â€” mobilde hiyerarÅŸi korunur */
+  function drawGlowWord(word, color, x, y, alpha, size, tier) {
+    if (alpha <= 0.01) return;
+    // tier: "outline" | "fill" | "micro" | false/undefined (spark)
+    const t = tier === true ? "fill" : (tier || "fill");
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const weight = t === "outline" ? 700 : t === "micro" ? 500 : 600;
+    ctx.font = `${weight} ${size}px Syne, system-ui, sans-serif`;
+    const col = rgb(color);
+
+    if (t === "outline") {
+      if (isMobile) {
+        // denser look, one blur pass (perf) + bright core (gorsel)
+        ctx.shadowColor = col;
+        ctx.shadowBlur = 12;
+        ctx.globalAlpha = alpha * 0.55;
+        ctx.fillStyle = col;
+        ctx.fillText(word, x, y);
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = Math.min(1, alpha);
+        ctx.fillStyle = `rgba(245, 243, 255, ${Math.min(1, alpha * 0.92)})`;
+        ctx.fillText(word, x, y);
+        ctx.globalAlpha = alpha * 0.9;
+        ctx.fillStyle = col;
+        ctx.fillText(word, x, y);
+      } else {
+        ctx.shadowColor = col;
+        ctx.shadowBlur = 22;
+        ctx.globalAlpha = alpha * 0.32;
+        ctx.fillStyle = col;
+        ctx.fillText(word, x, y);
+        ctx.shadowBlur = 10;
+        ctx.globalAlpha = alpha * 0.62;
+        ctx.fillText(word, x, y);
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = Math.min(1, alpha * 1.05);
+        ctx.fillStyle = `rgba(245, 243, 255, ${Math.min(1, alpha * 0.92)})`;
+        ctx.fillText(word, x, y);
+        ctx.globalAlpha = alpha * 0.88;
+        ctx.fillStyle = col;
+        ctx.fillText(word, x, y);
+      }
+    } else if (t === "fill") {
+      if (!isMobile) {
+        ctx.shadowColor = col;
+        ctx.shadowBlur = 14;
+        ctx.globalAlpha = alpha * 0.22;
+        ctx.fillStyle = col;
+        ctx.fillText(word, x, y);
+        ctx.shadowBlur = 6;
+        ctx.globalAlpha = alpha * 0.45;
+        ctx.fillText(word, x, y);
+        ctx.shadowBlur = 0;
+      }
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = col;
+      ctx.fillText(word, x, y);
+    } else {
+      // micro â€” desktop halo only; mobile solid (perf) with slightly higher alpha from gorsel density
+      if (!isMobile) {
+        ctx.shadowColor = col;
+        ctx.shadowBlur = 3;
+        ctx.globalAlpha = alpha * 0.2;
+        ctx.fillStyle = col;
+        ctx.fillText(word, x, y);
+      }
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = col;
+      ctx.fillText(word, x, y);
+    }
+    ctx.restore();
+  }
+
+  function drawAura(cx, cy, beat) {
+    const heartScale = (Math.min(W, H) / (isMobile ? 42 : 52)) * 1.08 * beat;
+    const r = Math.min(W, H) * (isMobile ? 0.36 : 0.3) * beat;
+    ctx.save();
+    // Kalp silÃ¼etine kÄ±rpÄ±lmÄ±ÅŸ soft volume â€” daire â€œfenerâ€ deÄŸil
+    ctx.beginPath();
+    strokeHeartPath(ctx, cx, cy, heartScale, 110);
+    ctx.clip();
+    const g = ctx.createRadialGradient(cx, cy - r * 0.12, r * 0.03, cx, cy, r);
+    g.addColorStop(0, "rgba(196, 181, 253, 0.3)");
+    g.addColorStop(0.35, "rgba(124, 58, 237, 0.16)");
+    g.addColorStop(0.7, "rgba(76, 29, 149, 0.08)");
+    g.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(cx - r, cy - r * 1.15, r * 2, r * 2.3);
+    ctx.restore();
+
+    // Soft bloom pass (desktop only â€” bloomCtx null on mobile)
+    if (bloomCtx && !reduceMotion && !isMobile) {
+      const bw = bloomCanvas.width;
+      const bh = bloomCanvas.height;
+      bloomCtx.clearRect(0, 0, bw, bh);
+      const sx = bw / W;
+      const sy = bh / H;
+      const br = r * sx * (isMobile ? 1.28 : 1.12);
+      const bg = bloomCtx.createRadialGradient(cx * sx, cy * sy, 0, cx * sx, cy * sy, br);
+      bg.addColorStop(0, "rgba(196, 181, 253, 0.48)");
+      bg.addColorStop(0.35, "rgba(124, 58, 237, 0.26)");
+      bg.addColorStop(1, "rgba(0,0,0,0)");
+      bloomCtx.fillStyle = bg;
+      bloomCtx.beginPath();
+      bloomCtx.arc(cx * sx, cy * sy, br, 0, Math.PI * 2);
+      bloomCtx.fill();
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      ctx.globalAlpha = isMobile ? 0.66 : 0.5;
+      ctx.drawImage(bloomCanvas, 0, 0, W, H);
+      ctx.restore();
+    }
+  }
+
+  function spawnSparks(x, y, n) {
+    n = n || (isMobile ? 8 : 12);
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const sp = 2 + Math.random() * 5.5;
+      sparks.push({
+        x, y,
+        vx: Math.cos(a) * sp,
+        vy: Math.sin(a) * sp,
+        alpha: 1,
+        word: WORDS[(Math.random() * WORDS.length) | 0],
+        color: COLORS[(Math.random() * COLORS.length) | 0],
+        size: 10 + Math.random() * 6,
+      });
+    }
+    ripples.push({ x, y, r: 4, max: isMobile ? 90 : 130, alpha: 0.55 });
+  }
+
+  function heartbeat(t) {
+    // Dual-beat cardiac feel: lub-dub
+    const cycle = (t % 1.15) / 1.15;
+    let b = 1;
+    if (cycle < 0.12) b = 1 + 0.055 * Math.sin((cycle / 0.12) * Math.PI);
+    else if (cycle > 0.18 && cycle < 0.28) b = 1 + 0.035 * Math.sin(((cycle - 0.18) / 0.1) * Math.PI);
+    return b;
+  }
+
+  function render(now) {
+    if (!started || !pageVisible) {
+      requestAnimationFrame(render);
+      return;
+    }
+
+    frame++;
+    const tSec = now * 0.001;
+    const beat = reduceMotion ? 1 : heartbeat(tSec);
+    breath = reduceMotion ? 1 : 1 + 0.012 * Math.sin(tSec * 0.55);
+    beatPhase = beat;
+
+    // Global soft intro (pairs with door fade / music feel)
+    if (sceneIntro < 1) {
+      sceneIntro = Math.min(1, sceneIntro + (reduceMotion ? 0.04 : 0.011));
+    }
+    const introEase = easeInOutCubic(sceneIntro);
+
+    // Smooth parallax (3D-ish)
+    px += (tx - px) * 0.05;
+    py += (ty - py) * 0.05;
+
+    const camX = px * 26;
+    const camY = py * 20;
+    const cx = W * 0.5 + camX * 0.22;
+    const cy = H * 0.42 + camY * 0.22;
+
+    ctx.fillStyle = "#050208";
+    ctx.fillRect(0, 0, W, H);
+
+    // Dust behind everything
+    drawDust(tSec, camX, camY);
+
+    // Vignette atmosphere
+    const vg = ctx.createRadialGradient(cx, cy, Math.min(W, H) * 0.2, cx, cy, Math.max(W, H) * 0.72);
+    vg.addColorStop(0, "rgba(15, 6, 30, 0)");
+    vg.addColorStop(1, "rgba(0, 0, 0, 0.72)");
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, W, H);
+
+    // Camera breathe + parallax around heart center
+    const scale = breath * beat * (0.94 + 0.06 * introEase);
+    ctx.save();
+    ctx.globalAlpha = 0.25 + 0.75 * introEase;
+    ctx.translate(cx + camX * 0.35, cy + camY * 0.35);
+    ctx.scale(scale, scale);
+    ctx.translate(-W * 0.5, -H * 0.42);
+
+    drawAura(W * 0.5, H * 0.42, beat);
+
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      const cap = p.alphaCap != null ? p.alphaCap : 1;
+      if (frame > p.delay) {
+        // Yerinde saydam â†’ opak (ortadan uÃ§uÅŸ yok); iÃ§e doÄŸru hafif saydam kalÄ±r
+        if (p.grow < 1) p.grow = Math.min(1, p.grow + (reduceMotion ? 0.05 : 0.028));
+        if (p.alpha < cap) {
+          const fadeSpd = p.kind === "outline"
+            ? (reduceMotion ? 0.07 : 0.04)
+            : p.kind === "micro"
+              ? (reduceMotion ? 0.05 : 0.028)
+              : (reduceMotion ? 0.055 : 0.034);
+          p.alpha = Math.min(cap, p.alpha + fadeSpd);
+        }
+        p.flight = 1;
+      }
+      const growEase = easeOutCubic(Math.min(1, p.grow));
+      let flick = 1;
+      if (p.alpha >= cap * 0.92) {
+        // Outline daha kararlÄ± (okunur), micro daha yumuÅŸak
+        const flickAmt = p.kind === "outline" ? 0.12 : p.kind === "micro" ? 0.18 : 0.16;
+        flick = (1 - flickAmt) + flickAmt * Math.sin(frame * 0.038 + p.flicker);
+      }
+      const a = p.alpha * flick * (0.35 + 0.65 * introEase);
+      if (a <= 0.01) continue;
+
+      const depthMul = 0.35 + p.z * 0.9;
+      let ox = camX * depthMul * 0.42 + Math.sin(tSec * 0.7 + p.flicker) * p.drift * (0.6 + p.z);
+      let oy = camY * depthMul * 0.38 + Math.cos(tSec * 0.55 + p.flicker) * p.drift * 0.55;
+      // Mikro: milimetrik yavaÅŸ yÃ¶rÃ¼nge â€” canlÄ± ama okunur
+      if (p.kind === "micro" && p.orbitAmp && !reduceMotion && !isMobile) {
+        ox += Math.sin(tSec * p.orbitSpd + p.orbitPhase) * p.orbitAmp;
+        oy += Math.cos(tSec * p.orbitSpd * 0.85 + p.orbitPhase * 1.3) * p.orbitAmp * 0.75;
+      }
+      const base =
+        p.kind === "outline" ? (isMobile ? 17.5 : 18) :
+        p.kind === "micro" ? (isMobile ? 7.8 : 8) :
+        (isMobile ? 13 : 14);
+      const size = base * p.sizeMult * (0.88 + 0.12 * growEase) * (0.9 + 0.1 * p.z) * (0.96 + 0.04 * beat);
+
+      drawGlowWord(p.word, p.color, p.bx + ox, p.by + oy, a, size, p.kind);
+    }
+
+    // Center name glow â€” soft scale + shimmer
+    const centerStart = fillStart + (reduceMotion ? 40 : 180);
+    if (frame > centerStart && !typing && !typedDone) {
+      const progress = Math.min(1, (frame - centerStart) / 90);
+      const a = easeOutCubic(progress);
+      const nameScale = 0.88 + 0.12 * a;
+      const pulse = 1 + 0.018 * Math.sin(frame * 0.045);
+      const fs = Math.floor((isMobile ? 40 : 48) * pulse * nameScale);
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = `italic 600 ${fs}px "Cormorant Garamond", Georgia, serif`;
+      ctx.shadowColor = "rgba(124,58,237,0.85)";
+      ctx.shadowBlur = isMobile ? 8 : 32;
+      ctx.globalAlpha = a * 0.92;
+      ctx.fillStyle = "#fff4f0";
+      ctx.fillText(HER, W * 0.5 + camX * 0.08, H * 0.42 + camY * 0.08);
+      ctx.restore();
+    }
+
+    ctx.restore();
+
+    // Sparks (screen space)
+    for (let i = sparks.length - 1; i >= 0; i--) {
+      const s = sparks[i];
+      s.x += s.vx;
+      s.y += s.vy;
+      s.vx *= 0.93;
+      s.vy *= 0.93;
+      s.alpha -= 0.022;
+      if (s.alpha <= 0) { sparks.splice(i, 1); continue; }
+      drawGlowWord(s.word, s.color, s.x, s.y, s.alpha, s.size, "fill");
+    }
+
+    // Ripples
+    for (let i = ripples.length - 1; i >= 0; i--) {
+      const r = ripples[i];
+      r.r += isMobile ? 2.8 : 3.4;
+      r.alpha *= 0.94;
+      if (r.r > r.max || r.alpha < 0.02) { ripples.splice(i, 1); continue; }
+      ctx.beginPath();
+      ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(196, 181, 253, ${r.alpha})`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    // Mesaj: kalp Ã§evresi kelimelerle Ã§izilince baÅŸlar
+    if (!typing && !typedDone && frame >= outlineDoneAt) {
+      const outlines = particles.filter((p) => p.kind === "outline");
+      const periDone =
+        outlines.length > 0 &&
+        outlines.every((p) => p.alpha >= (p.alphaCap || 1) * 0.88);
+      if (periDone) startTypewriter();
+    }
+
+    requestAnimationFrame(render);
+  }
+
+  function startTypewriter() {
+    typing = true;
+    msgEl.classList.add("visible");
+    // Fade out center name by marking typed start
+    let i = 0;
+    const speed = reduceMotion ? 8 : 28;
+    typedEl.innerHTML = "";
+    const cursor = document.createElement("span");
+    cursor.className = "cursor";
+
+    function tick() {
+      if (i <= MESSAGE.length) {
+        typedEl.textContent = MESSAGE.slice(0, i);
+        typedEl.appendChild(cursor);
+        i++;
+        setTimeout(tick, speed + (MESSAGE[i - 1] === "." ? 220 : MESSAGE[i - 1] === "," ? 90 : MESSAGE[i - 1] === " " ? 12 : 0));
+      } else {
+        typedEl.textContent = MESSAGE;
+        typedDone = true;
+        typing = false;
+        signEl.classList.add("show");
+        setTimeout(() => capyBtn.classList.add("awake"), 900);
+      }
+    }
+    tick();
+  }
+
+  function openDoor() {
+    if (door.classList.contains("opening") || door.classList.contains("gone") || journey) return;
+
+    keepMusicFlowing();
+
+    const rect = seal.getBoundingClientRect();
+    const sx = rect.left + rect.width * 0.5;
+    const sy = rect.top + rect.height * 0.5;
+    const tx = W * 0.5;
+    const ty = H * 0.42;
+    const heartScale = Math.min(W, H) / (isMobile ? 88 : 100);
+
+    seal.classList.add("morphing");
+    door.classList.add("journeying");
+
+    // YoÄŸun teknolojik partikÃ¼l bulutu
+    const journeyN = reduceMotion
+      ? (isMobile ? 280 : 700)
+      : (isMobile ? 620 : 2200);
+    makeJourneyDots(sx, sy, heartScale, journeyN);
+
+    journey = {
+      phase: "form",
+      t0: performance.now(),
+      x: sx,
+      y: sy,
+      sx: sx,
+      sy: sy,
+      tx: tx,
+      ty: ty,
+      heartScale: heartScale,
+    };
+
+    fxBurst.classList.add("active");
+    burstRunning = true;
+    requestAnimationFrame(tickJourney);
+  }
+
+  function setupDoorPhoto() {
+    const markReady = () => doorPhotoWrap.classList.remove("missing");
+    const markMissing = () => doorPhotoWrap.classList.add("missing");
+
+    doorPhoto.addEventListener("load", markReady);
+    doorPhoto.addEventListener("error", markMissing);
+
+    // Try common filenames the user may drop in the folder
+    const candidates = ["foto.jpg", "foto.jpeg", "foto.png", "foto.webp", "beril.jpg", "beril.png"];
+    let i = 0;
+    function tryNext() {
+      if (i >= candidates.length) {
+        markMissing();
+        return;
+      }
+      const src = candidates[i++];
+      const probe = new Image();
+      probe.onload = () => {
+        doorPhoto.src = src;
+        markReady();
+      };
+      probe.onerror = tryNext;
+      probe.src = src + "?v=" + Date.now();
+    }
+    tryNext();
+
+    photoInput.addEventListener("change", () => {
+      const file = photoInput.files && photoInput.files[0];
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      doorPhoto.src = url;
+      markReady();
+      toast("FotoÄŸraf yÃ¼klendi. KalÄ±cÄ± olsun diye klasÃ¶re foto.jpg koy");
+    });
+
+    doorPhotoWrap.addEventListener("click", (e) => {
+      // Label already opens file input; stop seal/door side-effects
+      e.stopPropagation();
+    });
+  }
+
+  /** Continues whatever is already playing; never resets currentTime. */
+  function keepMusicFlowing() {
+    if (!audio.paused && !audio.ended) {
+      musicOn = true;
+      musicBtn.classList.add("playing");
+      return;
+    }
+    // Only start if silent â€” do not reload or seek
+    const resume = audio.play();
+    if (resume && typeof resume.then === "function") {
+      resume.then(() => {
+        musicOn = true;
+        musicBtn.classList.add("playing");
+      }).catch(() => {
+        musicOn = false;
+        toast("MÃ¼ziÄŸi aÃ§mak iÃ§in saÄŸ Ã¼stteki dÃ¼ÄŸmeye dokun");
+      });
+    }
+  }
+
+  function tryPlayMusic() {
+    keepMusicFlowing();
+  }
+
+  function toggleMusic() {
+    if (musicOn && !audio.paused) {
+      audio.pause();
+      musicOn = false;
+      musicBtn.classList.remove("playing");
+    } else {
+      keepMusicFlowing();
+    }
+  }
+
+  function toast(text) {
+    toastEl.textContent = text;
+    toastEl.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2600);
+  }
+
+  function copyLink() {
+    const url = location.href.split("?")[0] + "?for=" + encodeURIComponent(HER.toLowerCase());
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(() => toast("BaÄŸlantÄ± kopyalandÄ±")).catch(() => fallbackCopy(url));
+    } else fallbackCopy(url);
+  }
+
+  function fallbackCopy(url) {
+    const ta = document.createElement("textarea");
+    ta.value = url;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); toast("BaÄŸlantÄ± kopyalandÄ±"); }
+    catch (e) { toast(url); }
+    document.body.removeChild(ta);
+  }
+
+  // Input: parallax
+  function onPointerMove(e) {
+    const x = e.clientX != null ? e.clientX : (e.touches && e.touches[0].clientX);
+    const y = e.clientY != null ? e.clientY : (e.touches && e.touches[0].clientY);
+    if (x == null) return;
+    tx = (x / W) * 2 - 1;
+    ty = (y / H) * 2 - 1;
+  }
+
+  function onPointerDown(e) {
+    if (!started) return;
+    if (e.target.closest && e.target.closest(".hud, #capy, #music-btn, #share-btn")) return;
+    const x = e.clientX != null ? e.clientX : (e.touches && e.touches[0].clientX);
+    const y = e.clientY != null ? e.clientY : (e.touches && e.touches[0].clientY);
+    if (x == null) return;
+    spawnSparks(x, y);
+  }
+
+  // Gyro (permission on iOS)
+  function setupGyro() {
+    if (!isMobile || reduceMotion) return;
+    const handler = (e) => {
+      if (!e.gamma && !e.beta) return;
+      const g = Math.max(-30, Math.min(30, e.gamma || 0));
+      const b = Math.max(-30, Math.min(30, (e.beta || 0) - 45));
+      tx = g / 30;
+      ty = b / 30;
+    };
+    if (typeof DeviceOrientationEvent !== "undefined" &&
+        typeof DeviceOrientationEvent.requestPermission === "function") {
+      // Request on first seal tap (user gesture)
+      seal.addEventListener("click", function once() {
+        DeviceOrientationEvent.requestPermission().then((s) => {
+          if (s === "granted") window.addEventListener("deviceorientation", handler, { passive: true });
+        }).catch(() => {});
+      }, { once: true });
+    } else {
+      window.addEventListener("deviceorientation", handler, { passive: true });
+    }
+  }
+
+  // Capybara
+  let capyFound = false;
+  capyBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    capyFound = true;
+    capyBtn.classList.add("found");
+    capyTip.classList.add("show");
+    capyTip.textContent = "senin kalbinin kÃ¶ÅŸesindeâ€¦";
+    setTimeout(() => capyTip.classList.remove("show"), 2800);
+  });
+
+  setupDoorPhoto();
+
+  // Prim music on first touch of the door â€” so seal click never restarts it
+  door.addEventListener("pointerdown", function primeMusic() {
+    keepMusicFlowing();
+  }, { passive: true });
+
+  seal.addEventListener("click", openDoor);
+  seal.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") openDoor(); });
+  musicBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleMusic(); });
+  shareBtn.addEventListener("click", (e) => { e.stopPropagation(); copyLink(); });
+
+  window.addEventListener("pointermove", onPointerMove, { passive: true });
+  window.addEventListener("pointerdown", onPointerDown, { passive: true });
+  window.addEventListener("resize", resize);
+
+  // Deep link: skip door if ?open=1
+  const params = new URLSearchParams(location.search);
+  resize();
+  setupGyro();
+  doorStarsRaf = requestAnimationFrame(drawAmbientStars);
+  requestAnimationFrame(render);
+
+  if (params.get("open") === "1") {
+    openDoor();
+  }
+
+  // Visibility: pause audio + skip canvas work when hidden
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      pageVisible = false;
+      hiddenAt = performance.now();
+      if (musicOn) audio.pause();
+    } else {
+      pageVisible = true;
+      if (hiddenAt && journey) journey.t0 += performance.now() - hiddenAt;
+      hiddenAt = 0;
+      if (musicOn) audio.play().catch(() => {});
+    }
+  });
+})();
+  </script>
+</body>
+</html>
